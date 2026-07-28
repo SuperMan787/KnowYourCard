@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardMatch — Find the card that fits your life</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #0A0F1C;
+    --panel: #121A2B;
+    --panel-2: #182338;
+    --panel-3: #1D2A42;
+    --gold: #C9A462;
+    --gold-soft: #E4CD97;
+    --mint: #49D9A4;
+    --violet: #7C83FD;
+    --coral: #FF7A6B;
+    --text: #EAEDF3;
+    --muted: #8A93A6;
+    --line: rgba(255,255,255,0.09);
+    --radius: 18px;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before{
+    content:"";
+    position: fixed;
+    inset:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 85% -5%, rgba(201,164,98,0.14), transparent 60%),
+      radial-gradient(ellipse 700px 500px at -5% 20%, rgba(73,217,164,0.10), transparent 60%);
+    pointer-events:none;
+    z-index:0;
+  }
+  h1,h2,h3{ font-family:'Space Grotesk', sans-serif; margin:0; letter-spacing:-0.02em; }
+  p{ margin:0; }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .wrap{ max-width: 1160px; margin:0 auto; padding: 0 28px; position:relative; z-index:1; }
+
+  a{ color:inherit; }
+  ::selection{ background: var(--gold); color: var(--ink); }
+
+  /* ---------- header ---------- */
+  header{ padding: 26px 0 10px; }
+  .nav{ display:flex; align-items:center; justify-content:space-between; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:700; font-size:19px; }
+  .logo-mark{ width:30px; height:22px; position:relative; }
+  .logo-mark span{ position:absolute; width:22px; height:15px; border-radius:4px; border:1.6px solid var(--gold); }
+  .logo-mark span:first-child{ top:0; left:0; background: rgba(201,164,98,0.12); }
+  .logo-mark span:last-child{ bottom:0; right:0; border-color: var(--mint); background: rgba(73,217,164,0.10); }
+  .nav-tag{ color:var(--muted); font-size:13.5px; }
+
+  /* ---------- hero ---------- */
+  .hero{ display:grid; grid-template-columns: 1.05fr 0.95fr; gap:50px; align-items:center; padding: 56px 0 70px; }
+  .eyebrow{ font-family:'IBM Plex Mono'; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mint); margin-bottom:16px; display:flex; align-items:center; gap:9px; }
+  .eyebrow::before{ content:""; width:16px; height:1px; background:var(--mint); }
+  .hero h1{ font-size: 50px; line-height:1.05; font-weight:600; }
+  .hero h1 em{ font-style:normal; color: var(--gold-soft); }
+  .hero p.sub{ margin-top:20px; font-size:17px; line-height:1.6; color: var(--muted); max-width: 460px; }
+  .hero-stats{ display:flex; gap:28px; margin-top:32px; }
+  .hero-stats div{ border-left:1px solid var(--line); padding-left:14px; }
+  .hero-stats .num{ font-family:'Space Grotesk'; font-size:22px; color: var(--text); font-weight:600; }
+  .hero-stats .lbl{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .cta-row{ margin-top:34px; display:flex; gap:14px; align-items:center; }
+  .btn-primary{
+    background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+    color:#1A1206; border:none; font-family:'Space Grotesk'; font-weight:600;
+    font-size:15px; padding:14px 26px; border-radius:999px; cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 10px 30px -8px rgba(201,164,98,0.55); }
+  .hint-txt{ font-size:13px; color:var(--muted); }
+
+  /* card stack visual */
+  .stack{ position:relative; height: 380px; }
+  .credit-card{
+    position:absolute; width: 320px; height: 200px; border-radius:16px; padding:22px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6);
+    display:flex; flex-direction:column; justify-content:space-between;
+    border: 1px solid rgba(255,255,255,0.12);
+    left:50%; top:50%;
+    transition: transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  .credit-card.c1{ background: linear-gradient(135deg,#1D2A42,#101827); transform: translate(-70%,-70%) rotate(-11deg); z-index:1; }
+  .credit-card.c2{ background: linear-gradient(135deg,#22331f,#132018); transform: translate(-50%,-46%) rotate(-2deg); z-index:2; }
+  .credit-card.c2{ background: linear-gradient(135deg, #16332b, #0f2019); }
+  .credit-card.c3{ background: linear-gradient(135deg, #2c2413, #1b160a); transform: translate(-32%,-24%) rotate(9deg); z-index:3; }
+  .stack:hover .c1{ transform: translate(-84%,-78%) rotate(-16deg); }
+  .stack:hover .c2{ transform: translate(-50%,-50%) rotate(0deg); }
+  .stack:hover .c3{ transform: translate(-18%,-14%) rotate(14deg); }
+  .cc-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .chip{ width:34px; height:24px; border-radius:5px; background: linear-gradient(135deg,#e9d9ad,#b99a5c); }
+  .contactless{ opacity:.85; }
+  .cc-issuer{ font-family:'Space Grotesk'; font-size:13px; letter-spacing:0.02em; color: rgba(255,255,255,0.85); }
+  .cc-number{ font-family:'IBM Plex Mono'; font-size:15.5px; letter-spacing:0.12em; color: rgba(255,255,255,0.92); }
+  .cc-bottom{ display:flex; justify-content:space-between; align-items:flex-end; }
+  .cc-name{ font-size:11px; letter-spacing:0.06em; color: rgba(255,255,255,0.7); text-transform:uppercase; }
+  .cc-tag{ font-family:'IBM Plex Mono'; font-size:10.5px; color: var(--mint); }
+
+  /* ---------- form ---------- */
+  .section-label{ font-family:'IBM Plex Mono'; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold-soft); margin-bottom:12px; }
+  .form-card{
+    background: var(--panel); border:1px solid var(--line); border-radius: 24px;
+    padding: 40px; margin-bottom: 90px;
+  }
+  .form-card h2{ font-size:28px; font-weight:600; margin-bottom:8px; }
+  .form-card > p{ color:var(--muted); font-size:15px; margin-bottom:34px; }
+
+  .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:26px; }
+  .field{ margin-bottom: 28px; }
+  .field label{ display:block; font-size:13.5px; color: var(--muted); margin-bottom:10px; font-weight:500; }
+  .field input[type=number]{
+    width:100%; background: var(--panel-2); border:1px solid var(--line); border-radius:12px;
+    padding: 13px 16px; color:var(--text); font-size:16px; font-family:'IBM Plex Mono';
+    outline:none; transition: border-color .15s ease;
+  }
+  .field input[type=number]:focus{ border-color: var(--gold); }
+  .field input::placeholder{ color:#57607a; }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:10px; }
+  .chip-opt{
+    border:1px solid var(--line); background: var(--panel-2); color: var(--muted);
+    padding: 10px 16px; border-radius:999px; font-size:13.5px; cursor:pointer;
+    user-select:none; transition: all .15s ease;
+  }
+  .chip-opt:hover{ border-color: rgba(201,164,98,0.5); color:var(--text); }
+  .chip-opt.active{ background: rgba(73,217,164,0.14); border-color: var(--mint); color: var(--mint); }
+
+  .radio-row{ display:flex; flex-wrap:wrap; gap:10px; }
+  .radio-opt{
+    border:1px solid var(--line); background: var(--panel-2); color: var(--muted);
+    padding: 10px 16px; border-radius:12px; font-size:13.5px; cursor:pointer;
+    transition: all .15s ease;
+  }
+  .radio-opt:hover{ border-color: rgba(201,164,98,0.5); color:var(--text); }
+  .radio-opt.active{ background: rgba(201,164,98,0.14); border-color: var(--gold); color: var(--gold-soft); }
+
+  .form-actions{ display:flex; align-items:center; gap:18px; margin-top:8px; }
+  #err{ color: var(--coral); font-size:13.5px; display:none; }
+
+  /* ---------- results ---------- */
+  #results{ display:none; margin-bottom:100px; }
+  .results-head{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:30px; flex-wrap:wrap; gap:14px;}
+  .results-head h2{ font-size:26px; font-weight:600; }
+  .results-head p{ color:var(--muted); font-size:14px; margin-top:6px; }
+  .reset-link{ font-size:13.5px; color:var(--gold-soft); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+
+  .match-row{
+    display:grid; grid-template-columns: 320px 1fr; gap:32px;
+    background: var(--panel); border:1px solid var(--line); border-radius:22px;
+    padding: 28px; margin-bottom:22px; align-items:center;
+  }
+  .match-row.rank-1{ border-color: rgba(201,164,98,0.5); box-shadow: 0 25px 60px -25px rgba(201,164,98,0.35); }
+
+  .mini-card{
+    width: 100%; aspect-ratio: 1.586; border-radius:14px; padding:18px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    border:1px solid rgba(255,255,255,0.12); box-shadow: 0 18px 40px -18px rgba(0,0,0,0.6);
+  }
+  .mini-card .chip{ width:28px; height:20px; }
+  .mini-card .cc-number{ font-size:13px; }
+  .mini-card .cc-issuer{ font-size:11.5px; }
+  .mini-card .cc-name{ font-size:9.5px; }
+  .mini-card .cc-tag{ font-size:9.5px; }
+
+  .match-detail{ min-width:0; }
+  .match-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:10px; flex-wrap:wrap; }
+  .match-name{ font-family:'Space Grotesk'; font-size:21px; font-weight:600; }
+  .match-issuer{ color:var(--muted); font-size:13.5px; margin-top:3px; }
+  .match-score{ text-align:right; }
+  .match-score .pct{ font-family:'IBM Plex Mono'; font-size:22px; color: var(--mint); font-weight:600; }
+  .match-score .pct-lbl{ font-size:10.5px; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+
+  .badge-row{ display:flex; flex-wrap:wrap; gap:8px; margin: 14px 0 16px; }
+  .badge{ font-size:11.5px; font-family:'IBM Plex Mono'; padding:5px 10px; border-radius:7px; border:1px solid var(--line); color:var(--muted); }
+  .badge.ok{ color: var(--mint); border-color: rgba(73,217,164,0.3); background: rgba(73,217,164,0.08); }
+  .badge.warn{ color: var(--coral); border-color: rgba(255,122,107,0.3); background: rgba(255,122,107,0.08); }
+
+  .why{ font-size:14px; color:#c4cad9; line-height:1.6; }
+  .why b{ color: var(--text); font-weight:600; }
+  .facts{ display:flex; gap:22px; margin-top:16px; flex-wrap:wrap; }
+  .facts div{ font-size:12.5px; color:var(--muted); }
+  .facts b{ display:block; color:var(--text); font-family:'IBM Plex Mono'; font-size:14px; margin-top:2px; font-weight:500;}
+
+  /* ---------- detail dropdown + site link ---------- */
+  .detail-toggle-row{ display:flex; align-items:center; gap:18px; margin-top:16px; flex-wrap:wrap; }
+  .detail-toggle{
+    background:none; border:none; color:var(--gold-soft); font-family:'IBM Plex Mono'; font-size:12.5px;
+    cursor:pointer; padding:0; display:flex; align-items:center; gap:6px; letter-spacing:0.02em;
+  }
+  .detail-toggle svg{ transition: transform .2s ease; }
+  .detail-toggle.open svg{ transform: rotate(180deg); }
+  .site-link{
+    font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--mint); text-decoration:none;
+    display:flex; align-items:center; gap:5px; border-bottom:1px solid rgba(73,217,164,0.35); padding-bottom:1px;
+  }
+  .site-link:hover{ border-color: var(--mint); }
+  .detail-panel{
+    margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);
+    display:none; animation: fadeDown .22s ease;
+  }
+  @keyframes fadeDown{ from{ opacity:0; transform:translateY(-6px);} to{ opacity:1; transform:translateY(0);} }
+  .detail-panel p{ font-size:13.5px; color:#c4cad9; line-height:1.65; }
+  .detail-facts{ display:flex; gap:24px; margin-top:14px; flex-wrap:wrap; }
+  .detail-facts div{ font-size:12px; color:var(--muted); }
+  .detail-facts b{ display:block; color:var(--text); font-family:'IBM Plex Mono'; font-size:13px; margin-top:3px; font-weight:500; }
+
+  /* ---------- compare plus icon ---------- */
+  .match-visual{ position:relative; }
+  .compare-add{
+    position:absolute; top:-10px; right:-10px; width:34px; height:34px; border-radius:50%;
+    background: var(--panel-3); border:1px solid var(--line); color:var(--text);
+    font-size:19px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 20px -8px rgba(0,0,0,0.7); transition: all .15s ease; font-family:'Space Grotesk';
+  }
+  .compare-add:hover{ border-color: var(--mint); color:var(--mint); transform: scale(1.08); }
+  .compare-add.active{ background: var(--mint); border-color: var(--mint); color:#082019; font-size:15px; }
+  .compare-add.disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
+
+  /* ---------- compare bar ---------- */
+  #compareBar{
+    position:fixed; left:50%; bottom:22px; transform:translate(-50%, 130%); z-index:60;
+    background: var(--panel-3); border:1px solid var(--line); border-radius:18px;
+    padding:14px 18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    box-shadow: 0 25px 60px -20px rgba(0,0,0,0.75); backdrop-filter: blur(10px);
+    transition: transform .3s cubic-bezier(.22,1,.36,1); max-width: calc(100% - 40px);
+  }
+  #compareBar.show{ transform:translate(-50%, 0); }
+  #compareBar .bar-label{ font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; }
+  #compareChips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .cmp-chip{
+    background: var(--panel-2); border:1px solid var(--line); border-radius:999px;
+    padding:6px 8px 6px 14px; font-size:12.5px; display:flex; align-items:center; gap:8px; color:var(--text);
+  }
+  .cmp-chip button{
+    background: rgba(255,122,107,0.15); border:none; color:var(--coral); width:18px; height:18px;
+    border-radius:50%; cursor:pointer; font-size:12px; line-height:1; display:flex; align-items:center; justify-content:center;
+  }
+  .compare-now-btn{
+    background: linear-gradient(135deg, var(--gold-soft), var(--gold)); color:#1A1206; border:none;
+    font-family:'Space Grotesk'; font-weight:600; font-size:13.5px; padding:9px 18px; border-radius:999px; cursor:pointer;
+  }
+  .compare-now-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .compare-clear{ font-size:12px; color:var(--muted); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+  /* ---------- compare modal ---------- */
+  #compareOverlay{
+    position:fixed; inset:0; background: rgba(6,9,16,0.78); backdrop-filter: blur(6px);
+    display:none; align-items:flex-start; justify-content:center; z-index:80; padding: 50px 20px; overflow-y:auto;
+  }
+  #compareOverlay.show{ display:flex; }
+  .compare-modal{
+    background: var(--panel); border:1px solid var(--line); border-radius:22px; padding:32px;
+    max-width: 980px; width:100%; position:relative;
+  }
+  .compare-modal-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; gap:20px; }
+  .compare-modal-head h3{ font-size:22px; font-weight:600; }
+  .compare-modal-head p{ color:var(--muted); font-size:13.5px; margin-top:6px; }
+  .compare-close{
+    background: var(--panel-2); border:1px solid var(--line); color:var(--text); width:34px; height:34px;
+    border-radius:50%; cursor:pointer; font-size:16px; flex-shrink:0;
+  }
+  .compare-grid{ display:grid; gap:20px; }
+  .compare-col{
+    background: var(--panel-2); border:1px solid var(--line); border-radius:16px; padding:18px; min-width:0;
+  }
+  .compare-col .mini-card{ margin-bottom:14px; }
+  .compare-col .cmp-name{ font-family:'Space Grotesk'; font-size:16.5px; font-weight:600; }
+  .compare-col .cmp-issuer{ color:var(--muted); font-size:12px; margin-top:2px; margin-bottom:14px; }
+  .compare-row{ display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:12.5px; }
+  .compare-row:first-of-type{ border-top:none; }
+  .compare-row span:first-child{ color:var(--muted); }
+  .compare-row span:last-child{ color:var(--text); text-align:right; font-family:'IBM Plex Mono'; font-size:12px; }
+  .compare-col .site-link{ margin-top:16px; justify-content:center; }
+
+  .empty-note{ text-align:center; padding: 50px 20px; color:var(--muted); font-size:14.5px; }
+
+  footer{ border-top:1px solid var(--line); padding: 34px 0 50px; color: var(--muted); font-size:12.5px; line-height:1.7; }
+  footer b{ color:#c4cad9; }
+
+  @media (max-width: 880px){
+    .hero{ grid-template-columns:1fr; padding-top:30px; }
+    .stack{ height:280px; order:-1; }
+    .hero h1{ font-size:36px; }
+    .grid2{ grid-template-columns:1fr; }
+    .form-card{ padding:26px; }
+    .match-row{ grid-template-columns:1fr; }
+    .mini-card{ max-width:320px; }
+  }
+
+  [tabindex]:focus-visible, button:focus-visible, .chip-opt:focus-visible, .radio-opt:focus-visible{
+    outline: 2px solid var(--mint); outline-offset:2px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; scroll-behavior:auto !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="nav">
+      <div class="logo"><span class="logo-mark"><span></span><span></span></span>CardMatch</div>
+      <div class="nav-tag">Built for salaried India, 2026</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Card matching, not card selling</div>
+      <h1>Find the credit card that actually fits <em>your</em> spending.</h1>
+      <p class="sub">Tell us your age, salary and where your money already goes. We'll rank the cards that make sense for you — and tell you honestly which ones don't.</p>
+      <div class="hero-stats">
+        <div><div class="num">14</div><div class="lbl">Cards compared</div></div>
+        <div><div class="num">6</div><div class="lbl">Spending categories</div></div>
+        <div><div class="num">0</div><div class="lbl">Sign-ups needed</div></div>
+      </div>
+      <div class="cta-row">
+        <button class="btn-primary" onclick="document.getElementById('matchForm').scrollIntoView({behavior:'smooth'})">Start matching ↓</button>
+        <span class="hint-txt">Takes about 30 seconds</span>
+      </div>
+    </div>
+    <div class="stack" aria-hidden="true">
+      <div class="credit-card c1">
+        <div class="cc-top"><div class="chip"></div><svg class="contactless" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 8.5a5 5 0 0 1 0 7"/><path d="M11.5 5a9 9 0 0 1 0 14"/><path d="M15 2a13 13 0 0 1 0 20"/></svg></div>
+        <div class="cc-number">•••• •••• •••• 4471</div>
+        <div class="cc-bottom"><div class="cc-name">Travel Miles</div><div class="cc-tag">PREMIUM</div></div>
+      </div>
+      <div class="credit-card c2">
+        <div class="cc-top"><div class="chip"></div><svg class="contactless" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 8.5a5 5 0 0 1 0 7"/><path d="M11.5 5a9 9 0 0 1 0 14"/><path d="M15 2a13 13 0 0 1 0 20"/></svg></div>
+        <div class="cc-number">•••• •••• •••• 2847</div>
+        <div class="cc-bottom"><div class="cc-name">Flat Cashback</div><div class="cc-tag">EVERYDAY</div></div>
+      </div>
+      <div class="credit-card c3">
+        <div class="cc-top"><div class="chip"></div><svg class="contactless" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 8.5a5 5 0 0 1 0 7"/><path d="M11.5 5a9 9 0 0 1 0 14"/><path d="M15 2a13 13 0 0 1 0 20"/></svg></div>
+        <div class="cc-number">•••• •••• •••• 9013</div>
+        <div class="cc-bottom"><div class="cc-name">Reward Points</div><div class="cc-tag">ENTRY-LEVEL</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="form-card" id="matchForm">
+    <div class="section-label">Tell us about you</div>
+    <h2>A few honest details</h2>
+    <p>Nothing here is stored or sent anywhere — the matching happens right in your browser.</p>
+
+    <div class="grid2">
+      <div class="field">
+        <label for="age">Your age</label>
+        <input type="number" id="age" placeholder="e.g. 27" min="18" max="80">
+      </div>
+      <div class="field">
+        <label for="salary">Monthly salary, in-hand (₹)</label>
+        <input type="number" id="salary" placeholder="e.g. 55000" min="0">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Where does most of your spending go? <span style="color:#57607a">(pick up to 3)</span></label>
+      <div class="chips" id="spendChips"></div>
+    </div>
+
+    <div class="field">
+      <label>What kind of rewards do you actually use?</label>
+      <div class="radio-row" id="rewardRadio"></div>
+    </div>
+
+    <div class="field">
+      <label>How much annual fee are you okay paying?</label>
+      <div class="radio-row" id="feeRadio"></div>
+    </div>
+
+    <div class="field">
+      <label>Card network preference <span style="color:#57607a">(optional)</span></label>
+      <div class="radio-row" id="networkRadio"></div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" onclick="runMatch()">Find my matches</button>
+      <span id="err">Add your age, salary and at least one spending category first.</span>
+    </div>
+  </div>
+
+  <section id="results">
+    <div class="results-head">
+      <div>
+        <h2 id="resTitle">Your top matches</h2>
+        <p id="resSub">Ranked by fit, not by who pays the highest commission — because nobody does.</p>
+      </div>
+      <div class="reset-link" onclick="document.getElementById('matchForm').scrollIntoView({behavior:'smooth'})">Change my answers</div>
+    </div>
+    <div id="resultsList"></div>
+  </section>
+
+  <footer>
+    <b>About this tool.</b> CardMatch scores cards using publicly known, general-market eligibility bands, fees and reward structures for illustration — issuers revise interest rates, fees, joining offers and income cut-offs often, and exact eligibility also depends on your credit score, city and existing relationship with the bank. Card network variants (Visa / RuPay / Mastercard / Amex) also vary by issuer and can change — always confirm the exact variant on the issuer's own website before applying. Treat this as a shortlist to research further, not a final decision. This tool doesn't collect, store or transmit anything you type — all matching runs locally in your browser. Nothing here is financial advice.
+  </footer>
+</div>
+
+<div id="compareBar">
+  <div class="bar-label">Comparing <span id="compareCount">0</span>/3</div>
+  <div id="compareChips"></div>
+  <button class="compare-now-btn" id="compareNowBtn" onclick="openCompareModal()" disabled>Compare now</button>
+  <div class="compare-clear" onclick="clearCompare()">Clear</div>
+</div>
+
+<div id="compareOverlay">
+  <div class="compare-modal">
+    <div class="compare-modal-head">
+      <div>
+        <h3>Side-by-side comparison</h3>
+        <p>Fee, network, eligibility and rewards for the cards you picked.</p>
+      </div>
+      <button class="compare-close" onclick="closeCompareModal()">✕</button>
+    </div>
+    <div class="compare-grid" id="compareGrid"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- data ---------------- */
+const CATEGORIES = [
+  {id:'online', label:'Online shopping'},
+  {id:'dining', label:'Dining & food delivery'},
+  {id:'travel', label:'Travel & flights'},
+  {id:'fuel', label:'Fuel'},
+  {id:'grocery', label:'Groceries & utilities'},
+  {id:'general', label:'A bit of everything'},
+];
+const REWARD_TYPES = [
+  {id:'cashback', label:'Straight cashback'},
+  {id:'points', label:'Reward points I redeem'},
+  {id:'miles', label:'Travel miles / air miles'},
+  {id:'any', label:'No strong preference'},
+];
+const FEE_BANDS = [
+  {id:0, label:'Free / lifetime-free only'},
+  {id:1000, label:'Up to ₹1,000 / yr'},
+  {id:5000, label:'Up to ₹5,000 / yr'},
+  {id:999999, label:'No limit — premium is fine'},
+];
+const NETWORK_TYPES = [
+  {id:'any', label:'No preference'},
+  {id:'rupay', label:'RuPay'},
+  {id:'visa', label:'Visa'},
+  {id:'mastercard', label:'Mastercard'},
+  {id:'amex', label:'American Express'},
+];
+const NETWORK_LABEL = {rupay:'RuPay', visa:'Visa', mastercard:'Mastercard', amex:'American Express', diners:'Diners Club'};
+
+// hue: 'mint' (cashback), 'gold' (points), 'violet' (miles/premium)
+const CARDS = [
+  {
+    id:'sbi-simplyclick', name:'SBI SimplyCLICK', issuer:'SBI Card', hue:'gold', rewardType:'points',
+    minAge:21, maxAge:70, minIncome:20000, fee:499, feeNote:'waived above ₹1L/yr spend',
+    categories:['online','general'], tier:'entry',
+    perk:'10x reward points on Amazon, BookMyShow & select online partners',
+    networks:['visa','rupay'],
+    details:'A low-fee entry card built around a fixed list of online partner merchants. Reward points earned outside those partners are modest, so it works best if your online spend is genuinely concentrated on the partner list rather than spread thin across many sites.',
+    link:'https://www.sbicard.com',
+  },
+  {
+    id:'sbi-cashback', name:'SBI Cashback Card', issuer:'SBI Card', hue:'mint', rewardType:'cashback',
+    minAge:21, maxAge:70, minIncome:25000, fee:999, feeNote:'waived above ₹2L/yr spend',
+    categories:['online','general'], tier:'entry',
+    perk:'5% cashback on all online spends, 1% offline, auto-credited',
+    networks:['visa'],
+    details:'Cashback is auto-credited monthly rather than needing manual redemption, which suits people who don\u2019t want to track a rewards catalogue. The 5% rate applies broadly to online spends rather than a narrow partner list, but there\u2019s usually a monthly cashback cap worth checking before applying.',
+    link:'https://www.sbicard.com',
+  },
+  {
+    id:'hdfc-millennia', name:'HDFC Millennia', issuer:'HDFC Bank', hue:'mint', rewardType:'cashback',
+    minAge:21, maxAge:60, minIncome:35000, fee:1000, feeNote:'waived above ₹1L/yr spend',
+    categories:['online','general','dining'], tier:'entry',
+    perk:'5% cashback on Amazon, Flipkart, Swiggy, Zomato & other partners',
+    networks:['visa','rupay'],
+    details:'Popular starter card for a younger, digitally-heavy spender — the 5% partner-merchant rate covers a wide set of everyday apps rather than one or two. Cashback is credited as reward points that convert to statement credit, and there\u2019s a milestone bonus on hitting quarterly spend thresholds.',
+    link:'https://www.hdfcbank.com',
+  },
+  {
+    id:'hdfc-regalia-gold', name:'HDFC Regalia Gold', issuer:'HDFC Bank', hue:'violet', rewardType:'points',
+    minAge:21, maxAge:65, minIncome:100000, fee:2500, feeNote:'waived above ₹5L/yr spend',
+    categories:['travel','dining','general'], tier:'premium',
+    perk:'Accelerated points on dining & travel, airport lounge access, milestone benefits',
+    networks:['visa','mastercard'],
+    details:'A step-up premium card rather than a top-tier one — lounge access and milestone vouchers are included, but the reward rate and lounge count sit below the bank\u2019s higher-end metal cards. Makes sense once your travel and dining spend is regular enough to offset the annual fee.',
+    link:'https://www.hdfcbank.com',
+  },
+  {
+    id:'icici-amazonpay', name:'ICICI Amazon Pay', issuer:'ICICI Bank', hue:'mint', rewardType:'cashback',
+    minAge:21, maxAge:65, minIncome:20000, fee:0, feeNote:'lifetime free',
+    categories:['online','grocery','general'], tier:'entry',
+    perk:'5% back on Amazon for Prime members, 2% on 100+ partner merchants',
+    networks:['visa'],
+    details:'No joining or annual fee, which makes it low-risk to hold long term. The best rate requires an active Amazon Prime membership and is limited to Amazon purchases — without Prime, or spending elsewhere, the return drops to the flat partner-merchant rate.',
+    link:'https://www.icicibank.com',
+  },
+  {
+    id:'axis-ace', name:'Axis Ace', issuer:'Axis Bank', hue:'mint', rewardType:'cashback',
+    minAge:21, maxAge:65, minIncome:25000, fee:499, feeNote:'waived above ₹2L/yr spend',
+    categories:['grocery','dining','general'], tier:'entry',
+    perk:'4% back on bill payments & recharges via Google Pay, 2% elsewhere',
+    networks:['visa'],
+    details:'Strongest for people who already route utility bills and recharges through Google Pay, since that\u2019s where the top cashback rate applies. General spends outside that channel still earn a flat rate, so it works reasonably well as an everyday secondary card too.',
+    link:'https://www.axisbank.com',
+  },
+  {
+    id:'axis-flipkart', name:'Axis Bank Flipkart Card', issuer:'Axis Bank', hue:'mint', rewardType:'cashback',
+    minAge:21, maxAge:65, minIncome:20000, fee:500, feeNote:'waived above ₹2L/yr spend',
+    categories:['online','general'], tier:'entry',
+    perk:'5% back on Flipkart & Myntra, 4% on preferred partners like Swiggy',
+    networks:['visa'],
+    details:'Built for Flipkart-heavy shoppers — the top cashback rate is tied to Flipkart and Myntra, with a secondary tier for a short list of preferred partners. Unlimited fuel surcharge waiver is a small extra worth noting if you also drive regularly.',
+    link:'https://www.axisbank.com',
+  },
+  {
+    id:'idfc-select', name:'IDFC FIRST Select', issuer:'IDFC FIRST Bank', hue:'gold', rewardType:'points',
+    minAge:21, maxAge:65, minIncome:25000, fee:0, feeNote:'lifetime free',
+    categories:['general','dining','travel'], tier:'entry',
+    perk:'Lifetime-free with points that don\u2019t expire, plus airport lounge visits',
+    networks:['visa','mastercard'],
+    details:'Rare combination of zero annual fee and non-expiring reward points, which is why it often shows up as a long-term "keep forever" card even for people who later add a premium card alongside it. Lounge access is capped to a limited number of visits per year.',
+    link:'https://www.idfcfirstbank.com',
+  },
+  {
+    id:'kotak-league', name:'Kotak League Platinum', issuer:'Kotak Mahindra Bank', hue:'gold', rewardType:'points',
+    minAge:21, maxAge:65, minIncome:20000, fee:499, feeNote:'waived above ₹2.5L/yr spend',
+    categories:['general','grocery'], tier:'entry',
+    perk:'Flat reward points across all spends, low entry barrier',
+    networks:['visa','mastercard'],
+    details:'A straightforward, no-frills entry card — points accrue flatly regardless of category, so there\u2019s nothing to optimise around. Reasonable pick as a first card while building credit history, less compelling once your spending has a clear category pattern.',
+    link:'https://www.kotak.com',
+  },
+  {
+    id:'amex-smartearn', name:'Amex SmartEarn', issuer:'American Express', hue:'gold', rewardType:'points',
+    minAge:21, maxAge:65, minIncome:25000, fee:495, feeNote:'waived from 2nd year on spend',
+    categories:['online','general'], tier:'entry',
+    perk:'Bonus points on Amazon, Uber & Swiggy, plus Amex-only offers',
+    networks:['amex'],
+    details:'Amex-network cards aren\u2019t accepted at every merchant terminal in India the way Visa/Mastercard/RuPay are, so it works best as a second card rather than your only one. Amex\u2019s own offers and customer service are usually the draw, alongside the partner bonus points.',
+    link:'https://www.americanexpress.com/en-in',
+  },
+  {
+    id:'hsbc-cashback', name:'HSBC Cashback Card', issuer:'HSBC', hue:'mint', rewardType:'cashback',
+    minAge:21, maxAge:65, minIncome:40000, fee:999, feeNote:'waived above ₹2L/yr spend',
+    categories:['general','grocery','fuel'], tier:'entry',
+    perk:'Flat 1.5% cashback on every spend, no category tracking needed',
+    networks:['visa','mastercard'],
+    details:'The appeal is simplicity — one flat rate on everything, no partner list or app to check before spending. That also means it rarely wins if compared card-for-card against a category-specific card in your top spending area, so it suits people who value predictability over maximising returns.',
+    link:'https://www.hsbc.co.in',
+  },
+  {
+    id:'yes-paisasave', name:'YES Bank Paisabazaar PaisaSave', issuer:'YES Bank', hue:'mint', rewardType:'cashback',
+    minAge:21, maxAge:60, minIncome:18000, fee:0, feeNote:'lifetime free',
+    categories:['dining','online','general'], tier:'entry',
+    perk:'Cashback on dining, movies & online spends with no joining fee',
+    networks:['visa'],
+    details:'One of the lower income-eligibility bars on this list, which makes it accessible as a first card. Zero joining fee removes the usual "will I hit the spend threshold to waive it" question that comes with most entry cards.',
+    link:'https://www.yesbank.in',
+  },
+  {
+    id:'diners-black', name:'HDFC Diners Club Black', issuer:'HDFC Bank', hue:'violet', rewardType:'miles',
+    minAge:21, maxAge:65, minIncome:250000, fee:10000, feeNote:'waived above ₹8L/yr spend',
+    categories:['travel','dining','general'], tier:'premium',
+    perk:'Unlimited lounge access, high air-mile transfer value, golf privileges',
+    networks:['diners'],
+    details:'Sits at the top of this list on both fee and eligibility — it only really makes sense once travel and dining spend is substantial enough to use the lounge access and air-mile transfers regularly. Diners Club acceptance is narrower than Visa/Mastercard/RuPay at some smaller merchants, worth keeping a second card handy for that.',
+    link:'https://www.hdfcbank.com',
+  },
+  {
+    id:'sbi-elite', name:'SBI Card ELITE', issuer:'SBI Card', hue:'violet', rewardType:'points',
+    minAge:21, maxAge:70, minIncome:150000, fee:4999, feeNote:'waived above ₹10L/yr spend',
+    categories:['travel','dining','general'], tier:'premium',
+    perk:'5x points on dining/movies/grocery, movie ticket offers, lounge access',
+    networks:['visa','mastercard'],
+    details:'Positioned between mid-tier and top-tier premium — lounge access and milestone benefits are solid without reaching the very top annual fee bracket. The movie ticket offer is a recurring, easy-to-use perk that some pricier cards skip.',
+    link:'https://www.sbicard.com',
+  },
+];
+
+/* ---------------- state ---------------- */
+let selectedCats = [];
+let selectedReward = 'any';
+let selectedFee = 5000;
+let selectedNetwork = 'any';
+let compareList = [];
+
+/* ---------------- build inputs ---------------- */
+const spendChipsEl = document.getElementById('spendChips');
+CATEGORIES.forEach(c=>{
+  const el = document.createElement('div');
+  el.className = 'chip-opt';
+  el.textContent = c.label;
+  el.tabIndex = 0;
+  el.onclick = ()=>{
+    if(selectedCats.includes(c.id)){
+      selectedCats = selectedCats.filter(x=>x!==c.id);
+    } else {
+      if(selectedCats.length>=3) selectedCats.shift();
+      selectedCats.push(c.id);
+    }
+    renderChips();
+  };
+  el.dataset.id = c.id;
+  spendChipsEl.appendChild(el);
+});
+function renderChips(){
+  [...spendChipsEl.children].forEach(el=>{
+    el.classList.toggle('active', selectedCats.includes(el.dataset.id));
+  });
+}
+
+const rewardRadioEl = document.getElementById('rewardRadio');
+REWARD_TYPES.forEach(r=>{
+  const el = document.createElement('div');
+  el.className = 'radio-opt' + (r.id==='any' ? ' active' : '');
+  el.textContent = r.label;
+  el.tabIndex = 0;
+  el.dataset.id = r.id;
+  el.onclick = ()=>{
+    selectedReward = r.id;
+    [...rewardRadioEl.children].forEach(x=>x.classList.toggle('active', x.dataset.id===r.id));
+  };
+  rewardRadioEl.appendChild(el);
+});
+
+const feeRadioEl = document.getElementById('feeRadio');
+FEE_BANDS.forEach(f=>{
+  const el = document.createElement('div');
+  el.className = 'radio-opt' + (f.id===5000 ? ' active':'');
+  el.textContent = f.label;
+  el.tabIndex = 0;
+  el.dataset.id = f.id;
+  el.onclick = ()=>{
+    selectedFee = f.id;
+    [...feeRadioEl.children].forEach(x=>x.classList.toggle('active', Number(x.dataset.id)===f.id));
+  };
+  feeRadioEl.appendChild(el);
+});
+
+const networkRadioEl = document.getElementById('networkRadio');
+NETWORK_TYPES.forEach(n=>{
+  const el = document.createElement('div');
+  el.className = 'radio-opt' + (n.id==='any' ? ' active' : '');
+  el.textContent = n.label;
+  el.tabIndex = 0;
+  el.dataset.id = n.id;
+  el.onclick = ()=>{
+    selectedNetwork = n.id;
+    [...networkRadioEl.children].forEach(x=>x.classList.toggle('active', x.dataset.id===n.id));
+  };
+  networkRadioEl.appendChild(el);
+});
+
+/* ---------------- matching ---------------- */
+function hueColors(hue){
+  if(hue==='mint') return {bg:'linear-gradient(135deg,#16332b,#0f2019)', tag:'#49D9A4', label:'CASHBACK'};
+  if(hue==='violet') return {bg:'linear-gradient(135deg,#241f3d,#151129)', tag:'#7C83FD', label:'PREMIUM'};
+  return {bg:'linear-gradient(135deg,#2c2413,#1b160a)', tag:'#C9A462', label:'POINTS'};
+}
+
+function scoreCard(card, age, salary, cats, reward, feeCap, network){
+  const ageOk = age>=card.minAge && age<=card.maxAge;
+  const incomeOk = salary*12 >= card.minIncome*12 ? salary >= card.minIncome : false;
+  const feeOk = card.fee <= feeCap;
+  const networkOk = network==='any' ? true : card.networks.includes(network);
+
+  let score = 0;
+  const maxScore = 3*2 + 4 + 2 + 2; // category matches + reward + fee + tier fit, roughly normalized below
+
+  const catMatches = cats.filter(c=> card.categories.includes(c)).length;
+  score += catMatches * 8;
+
+  if(reward==='any') score += 4;
+  else if(card.rewardType===reward) score += 10;
+  else score += 1;
+
+  if(feeOk) score += 6; else score -= 10;
+
+  if(network!=='any'){
+    if(networkOk) score += 5; else score -= 14;
+  }
+
+  // tier fit: don't push premium cards on low income, don't push bare entry cards on very high income
+  const monthly = salary;
+  if(card.tier==='premium'){
+    if(monthly >= card.minIncome) score += 6; else score -= 20;
+  } else {
+    if(monthly < 60000) score += 4;
+    else if(monthly < 150000) score += 2;
+  }
+
+  if(!ageOk) score -= 30;
+  if(!incomeOk) score -= 18;
+
+  return {score, ageOk, incomeOk, feeOk, catMatches, networkOk};
+}
+
+function runMatch(){
+  const age = Number(document.getElementById('age').value);
+  const salary = Number(document.getElementById('salary').value);
+  const errEl = document.getElementById('err');
+
+  if(!age || !salary || selectedCats.length===0){
+    errEl.style.display = 'inline';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const scored = CARDS.map(card=>{
+    const r = scoreCard(card, age, salary, selectedCats, selectedReward, selectedFee, selectedNetwork);
+    return {card, ...r};
+  });
+
+  const eligible = scored.filter(s=>s.ageOk && s.incomeOk).sort((a,b)=>b.score-a.score);
+  const almost = scored.filter(s=>!(s.ageOk && s.incomeOk)).sort((a,b)=>b.score-a.score);
+
+  const top = eligible.length ? eligible.slice(0,4) : [];
+  const maxPossible = Math.max(...scored.map(s=>s.score), 1);
+
+  renderResults(top, almost.slice(0,2), maxPossible, {age, salary});
+}
+
+function catLabel(id){ return CATEGORIES.find(c=>c.id===id).label; }
+
+function cardVisual(card, small){
+  const h = hueColors(card.hue);
+  const cls = small ? 'mini-card' : 'credit-card';
+  return `
+  <div class="${cls}" style="background:${h.bg}">
+    <div class="cc-top">
+      <div class="chip"></div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" opacity="0.85"><path d="M8 8.5a5 5 0 0 1 0 7"/><path d="M11.5 5a9 9 0 0 1 0 14"/><path d="M15 2a13 13 0 0 1 0 20"/></svg>
+    </div>
+    <div>
+      <div class="cc-number">•••• •••• •••• ${(1000+Math.floor(Math.random()*8999))}</div>
+    </div>
+    <div class="cc-bottom">
+      <div>
+        <div class="cc-issuer">${card.issuer}</div>
+        <div class="cc-name">${card.name}</div>
+      </div>
+      <div class="cc-tag" style="color:${h.tag}">${h.label}</div>
+    </div>
+  </div>`;
+}
+
+function renderResults(top, almost, maxPossible, profile){
+  const resultsSection = document.getElementById('results');
+  const list = document.getElementById('resultsList');
+  const title = document.getElementById('resTitle');
+  const sub = document.getElementById('resSub');
+  list.innerHTML = '';
+
+  if(top.length===0){
+    title.textContent = "No clean matches — but here's the closest";
+    sub.textContent = `At age ${profile.age} with ₹${profile.salary.toLocaleString('en-IN')}/mo, most cards on our list need either a slightly higher income or fall outside the age band.`;
+    almost.forEach(item=>list.appendChild(buildRow(item, maxPossible, true)));
+  } else {
+    title.textContent = 'Your top matches';
+    sub.textContent = `Ranked for a ${profile.age}-year-old earning ₹${profile.salary.toLocaleString('en-IN')}/mo, based on where you spend.`;
+    top.forEach((item, i)=> list.appendChild(buildRow(item, maxPossible, false, i===0)) );
+
+    if(almost.length){
+      const divider = document.createElement('div');
+      divider.style.cssText = 'margin:30px 0 16px; color:var(--muted); font-size:13px; font-family:IBM Plex Mono; letter-spacing:0.08em; text-transform:uppercase;';
+      divider.textContent = 'Worth growing into';
+      list.appendChild(divider);
+      almost.forEach(item=>list.appendChild(buildRow(item, maxPossible, true)));
+    }
+  }
+
+  resultsSection.style.display = 'block';
+  resultsSection.scrollIntoView({behavior:'smooth'});
+}
+
+function networkText(card){ return card.networks.map(n=>NETWORK_LABEL[n]).join(' · '); }
+
+function buildRow(item, maxPossible, isAlmost, isTop){
+  const {card, score, ageOk, incomeOk, feeOk, catMatches, networkOk} = item;
+  const pct = Math.max(5, Math.min(99, Math.round((score/maxPossible)*100)));
+
+  const row = document.createElement('div');
+  row.className = 'match-row' + (isTop ? ' rank-1' : '');
+  row.dataset.id = card.id;
+
+  const badges = [];
+  badges.push(`<span class="badge ${ageOk?'ok':'warn'}">${ageOk?'✓ age eligible':'age outside band'}</span>`);
+  badges.push(`<span class="badge ${incomeOk?'ok':'warn'}">${incomeOk?'✓ income eligible':'needs ₹'+card.minIncome.toLocaleString('en-IN')+'/mo+'}</span>`);
+  badges.push(`<span class="badge ${feeOk?'ok':'warn'}">${feeOk?'✓ fits your fee range':'fee above your range'}</span>`);
+  if(selectedNetwork!=='any'){
+    badges.push(`<span class="badge ${networkOk?'ok':'warn'}">${networkOk?'✓ available on '+NETWORK_LABEL[selectedNetwork]:'not on '+NETWORK_LABEL[selectedNetwork]}</span>`);
+  }
+
+  const catText = catMatches>0
+    ? `Matches <b>${catMatches}</b> of your picked ${catMatches===1?'category':'categories'}`
+    : `Doesn't overlap with your picked categories`;
+
+  row.innerHTML = `
+    <div class="match-visual">
+      ${cardVisual(card, true)}
+      <button class="compare-add" data-id="${card.id}" title="Add to comparison" aria-label="Add ${card.name} to comparison">+</button>
+    </div>
+    <div class="match-detail">
+      <div class="match-top">
+        <div>
+          <div class="match-name">${card.name}</div>
+          <div class="match-issuer">${card.issuer} · Annual fee ₹${card.fee.toLocaleString('en-IN')} <span style="opacity:0.7">(${card.feeNote})</span></div>
+        </div>
+        <div class="match-score">
+          <div class="pct">${pct}%</div>
+          <div class="pct-lbl">match</div>
+        </div>
+      </div>
+      <div class="badge-row">${badges.join('')}</div>
+      <div class="why"><b>${catText}.</b> ${card.perk}.</div>
+      <div class="facts">
+        <div>Best for<b>${card.categories.map(catLabel).join(', ')}</b></div>
+        <div>Reward style<b style="text-transform:capitalize">${card.rewardType}</b></div>
+        <div>Card network<b>${networkText(card)}</b></div>
+      </div>
+      <div class="detail-toggle-row">
+        <button class="detail-toggle" data-id="${card.id}">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          More details
+        </button>
+        <a class="site-link" href="${card.link}" target="_blank" rel="noopener noreferrer">
+          Visit official site
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M7 7h10v10"/></svg>
+        </a>
+      </div>
+      <div class="detail-panel" id="detail-${card.id}">
+        <p>${card.details}</p>
+        <div class="detail-facts">
+          <div>Age eligibility<b>${card.minAge}–${card.maxAge} yrs</b></div>
+          <div>Min income<b>₹${card.minIncome.toLocaleString('en-IN')}/mo</b></div>
+          <div>Segment<b style="text-transform:capitalize">${card.tier}</b></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  row.querySelector('.compare-add').onclick = ()=> toggleCompare(card.id);
+  row.querySelector('.detail-toggle').onclick = (e)=> toggleDetails(card.id, e.currentTarget);
+
+  return row;
+}
+
+/* ---------------- details dropdown ---------------- */
+function toggleDetails(id, btn){
+  const panel = document.getElementById('detail-'+id);
+  const isOpen = panel.style.display === 'block';
+  panel.style.display = isOpen ? 'none' : 'block';
+  btn.classList.toggle('open', !isOpen);
+  btn.innerHTML = `
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+    ${isOpen ? 'More details' : 'Less details'}
+  `;
+}
+
+/* ---------------- comparison ---------------- */
+function toggleCompare(id){
+  if(compareList.includes(id)){
+    compareList = compareList.filter(x=>x!==id);
+  } else {
+    if(compareList.length>=3) return;
+    compareList.push(id);
+  }
+  updateCompareUI();
+}
+
+function clearCompare(){
+  compareList = [];
+  updateCompareUI();
+  closeCompareModal();
+}
+
+function updateCompareUI(){
+  document.querySelectorAll('.compare-add').forEach(btn=>{
+    const id = btn.dataset.id;
+    const active = compareList.includes(id);
+    btn.classList.toggle('active', active);
+    btn.textContent = active ? '✓' : '+';
+    btn.classList.toggle('disabled', !active && compareList.length>=3);
+  });
+
+  const bar = document.getElementById('compareBar');
+  const chips = document.getElementById('compareChips');
+  const count = document.getElementById('compareCount');
+  const nowBtn = document.getElementById('compareNowBtn');
+
+  count.textContent = compareList.length;
+  nowBtn.disabled = compareList.length < 2;
+  bar.classList.toggle('show', compareList.length>0);
+
+  chips.innerHTML = compareList.map(id=>{
+    const card = CARDS.find(c=>c.id===id);
+    return `<div class="cmp-chip">${card.name}<button aria-label="Remove ${card.name}" onclick="toggleCompare('${id}')">✕</button></div>`;
+  }).join('');
+
+  if(compareList.length>0 && document.getElementById('compareOverlay').classList.contains('show')){
+    renderCompareGrid();
+  }
+}
+
+function openCompareModal(){
+  if(compareList.length<2) return;
+  renderCompareGrid();
+  document.getElementById('compareOverlay').classList.add('show');
+}
+function closeCompareModal(){
+  document.getElementById('compareOverlay').classList.remove('show');
+}
+
+function renderCompareGrid(){
+  const grid = document.getElementById('compareGrid');
+  grid.style.gridTemplateColumns = `repeat(${compareList.length}, minmax(0,1fr))`;
+  grid.innerHTML = compareList.map(id=>{
+    const card = CARDS.find(c=>c.id===id);
+    return `
+    <div class="compare-col">
+      ${cardVisual(card, true)}
+      <div class="cmp-name">${card.name}</div>
+      <div class="cmp-issuer">${card.issuer}</div>
+      <div class="compare-row"><span>Network</span><span>${networkText(card)}</span></div>
+      <div class="compare-row"><span>Annual fee</span><span>₹${card.fee.toLocaleString('en-IN')}</span></div>
+      <div class="compare-row"><span>Fee waiver</span><span>${card.feeNote}</span></div>
+      <div class="compare-row"><span>Reward style</span><span style="text-transform:capitalize">${card.rewardType}</span></div>
+      <div class="compare-row"><span>Best for</span><span>${card.categories.map(catLabel).join(', ')}</span></div>
+      <div class="compare-row"><span>Age band</span><span>${card.minAge}–${card.maxAge} yrs</span></div>
+      <div class="compare-row"><span>Min income</span><span>₹${card.minIncome.toLocaleString('en-IN')}/mo</span></div>
+      <div class="compare-row"><span>Segment</span><span style="text-transform:capitalize">${card.tier}</span></div>
+      <a class="site-link" href="${card.link}" target="_blank" rel="noopener noreferrer">
+        Visit official site
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M7 7h10v10"/></svg>
+      </a>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
